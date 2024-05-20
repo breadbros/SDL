@@ -275,8 +275,42 @@ SDL_error *SDL_GetErrBuf(void)
 #endif /* SDL_THREADS_DISABLED */
 }
 
+/***
+ * FROM bugsplat.h
+ */
+_ACRTIMP unsigned int __cdecl _set_abort_behavior(
+    _In_ unsigned int _Flags,
+    _In_ unsigned int _Mask
+);
+
+void signal_handler(int i) {
+    int *z = 0;
+    *z = 13;
+}
+
+#include "signal.h"
+
+// Argument values for _set_abort_behavior().
+#define _WRITE_ABORT_MSG  0x1 // debug only, has no effect in release
+#define _CALL_REPORTFAULT 0x2
+
+
+int SetPerThreadCRTExceptionBehavior()
+{
+    signal(SIGABRT, signal_handler);
+    _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
+
+    return 0;
+}
+/***
+ * END FROM bugsplat.h
+ */
+
+
 void SDL_RunThread(SDL_Thread *thread)
 {
+    SetPerThreadCRTExceptionBehavior();
+
     void *userdata = thread->userdata;
     int(SDLCALL * userfunc)(void *) = thread->userfunc;
 
